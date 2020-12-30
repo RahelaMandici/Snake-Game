@@ -6,20 +6,32 @@ import random
 WHITE = (255, 255, 255)
 FUNDAL = (0, 0, 0)
 RED = (255, 0, 0)
-
+GREEN = (0, 255, 0)
 with open(sys.argv[1]) as f_in:
     data = json.load(f_in)
 
 table_size = data["table_size"].copy()
 obstacles = data["obstacles"].copy()
-close_all = False
+
+pygame.init()
+pygame.display.set_caption('Snake Game')
+screen = pygame.display.set_mode((table_size[0], table_size[1] + 100))
+font = pygame.font.SysFont('Comic Sans MS', 30)
+
+game_over = False
+high_score = 0
+snake_box_size = 10
+obstacles_box_size = 10
+
+obstacles_rect = [pygame.Rect(obstacle[0], obstacle[1], obstacles_box_size, obstacles_box_size)
+                  for obstacle in obstacles]
 
 
 def verify_quit_game():
-    global close_all
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            close_all = True
+            pygame.quit()
+            quit()
 
 
 def get_moving_direction(direction):
@@ -69,30 +81,18 @@ def get_food():
     return food
 
 
-def main():
-    global close_all, table_size, obstacles, snake_box_size
-    pygame.init()
-    pygame.display.set_caption('Snake Game')
-    font = pygame.font.SysFont('Comic Sans MS', 30)
-    clock = pygame.time.Clock()
-
-    close_all = False
-    snake_box_size = 10
-    obstacles_box_size = 10
+def play():
+    global game_over
     direction = [0, 0]
     snake = list()
     no_food = True
     score = 0
 
-    screen = pygame.display.set_mode((table_size[0], table_size[1] + 100))
-    text_surface = font.render('Your Score: ' + str(score), False, WHITE)
-
-    obstacles_rect = [pygame.Rect(obstacle[0], obstacle[1], obstacles_box_size, obstacles_box_size)
-                      for obstacle in obstacles]
-
     snake.append(pygame.Rect(100, 100, snake_box_size, snake_box_size))
+    text_surface = font.render('Your Score: ' + str(score), False, WHITE)
+    clock = pygame.time.Clock()
 
-    while not close_all:
+    while not game_over:
         verify_quit_game()
         screen.fill(FUNDAL)
 
@@ -125,15 +125,19 @@ def main():
             if len(food.collidelistall(obstacles_rect)) == 0 and len(food.collidelistall(snake)) == 0:
                 no_food = False
 
-        pygame.draw.rect(screen, (0, 255, 0), food)
+        pygame.draw.rect(screen, GREEN, food)
 
-        # verific daca se loveste de obstacole sau de el insusi
+        # verific daca se loveste de obstacole
         if len(snake[0].collidelistall(obstacles_rect)) > 0:
-            break
+            game_over = True
+            game_over_screen(score)
+
+        # verific daca se musca pe el
         danger_zone = snake.copy()
         danger_zone.pop(0)
         if len(snake[0].collidelistall(danger_zone)) > 0:
-            break
+            game_over = True
+            game_over_screen(score)
 
         if snake[0].colliderect(food):
             pygame.draw.rect(screen, WHITE, food)
@@ -144,11 +148,67 @@ def main():
             score += 5
             text_surface = font.render('Your Score: ' + str(score), False, WHITE)
             no_food = True
-
-        pygame.display.update()
+        pygame.display.flip()
         clock.tick(15)
+    return score
+
+
+def game_over_screen(score):
+    global game_over, high_score
+
+    screen.fill(FUNDAL)
+    text_surface = font.render('Your Score: ' + str(score), False, WHITE)
+    screen.blit(text_surface, (table_size[0] / 2 - text_surface.get_width() / 2,
+                               table_size[1] / 2 - text_surface.get_height()))
+    if score > high_score:
+        high_score = score
+
+    play_again_text = font.render('Play again', False, WHITE)
+    quit_session_text = font.render('Quit Session', False, WHITE)
+
+    screen.blit(play_again_text, (table_size[0] / 2 - play_again_text.get_width() / 2,
+                                  table_size[1] / 2 + play_again_text.get_height()))
+    screen.blit(quit_session_text, (table_size[0] / 2 - quit_session_text.get_width() / 2,
+                                    table_size[1] / 2 + play_again_text.get_height()
+                                    + quit_session_text.get_height() + 50))
+
+    button_play_again = pygame.Rect(table_size[0] / 2 - play_again_text.get_width() / 2,
+                                    table_size[1] / 2 + play_again_text.get_height(), play_again_text.get_width(),
+                                    play_again_text.get_height())
+
+    button_quit_session = pygame.Rect(table_size[0] / 2 - quit_session_text.get_width() / 2,
+                                      table_size[1] / 2 + play_again_text.get_height()
+                                      + quit_session_text.get_height() + 50, quit_session_text.get_width(),
+                                      quit_session_text.get_height())
+
+    pygame.display.flip()
+    while game_over:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if button_play_again.collidepoint(event.pos):
+                        game_over = False
+                        play()
+                    if button_quit_session.collidepoint(event.pos):
+                        game_over = False
+                        quit_session_screen()
+
+
+def quit_session_screen():
+    screen.fill(FUNDAL)
+    text = font.render('High score: ' + str(high_score), False, WHITE)
+
+    screen.blit(text, (table_size[0] / 2 - text.get_width() / 2, table_size[1] / 2))
+    pygame.display.flip()
+    while True:
+        verify_quit_game()
+
+
+def main():
+    play()
 
 
 main()
-pygame.quit()
-quit()

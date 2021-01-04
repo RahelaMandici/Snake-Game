@@ -7,24 +7,11 @@ WHITE = (255, 255, 255)
 FUNDAL = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
-with open(sys.argv[1]) as f_in:
-    data = json.load(f_in)
-
-table_size = data["table_size"].copy()
-obstacles = data["obstacles"].copy()
-
-pygame.init()
-pygame.display.set_caption('Snake Game')
-screen = pygame.display.set_mode((table_size[0], table_size[1] + 100))
-font = pygame.font.SysFont('Comic Sans MS', 30)
 
 game_over = False
 high_score = 0
 snake_box_size = 10
 obstacles_box_size = 10
-
-obstacles_rect = [pygame.Rect(obstacle[0], obstacle[1], obstacles_box_size, obstacles_box_size)
-                  for obstacle in obstacles]
 
 
 def verify_quit_game():
@@ -56,6 +43,19 @@ def get_moving_direction(direction):
             direction[0] = 0
 
 
+def snake_advances(snake, direction):
+    if direction[0] != 0 or direction[1] != 0:
+        if len(snake) > 1:
+            snake_tail = snake.pop(-1)
+            snake_tail.x = snake[0].x + direction[0]
+            snake_tail.y = snake[0].y + direction[1]
+
+            snake.insert(0, snake_tail)
+        else:
+            snake[0].x += direction[0]
+            snake[0].y += direction[1]
+
+
 def verify_snake_out_of_table(snake_head):
     if snake_head.x > table_size[0] - snake_box_size:
         snake_head.x = 0
@@ -81,6 +81,16 @@ def get_food():
     return food
 
 
+def verify_snake_collision(snake):
+    if len(snake[0].collidelistall(obstacles_rect)) > 0:
+        return True
+
+    danger_zone = snake.copy()
+    danger_zone.pop(0)
+    if len(snake[0].collidelistall(danger_zone)) > 0:
+        return True
+
+
 def play():
     global game_over
     direction = [0, 0]
@@ -99,24 +109,6 @@ def play():
         pygame.draw.line(screen, WHITE, (0, table_size[1]), (table_size[0], table_size[1]))
         screen.blit(text_surface, (table_size[0] / 2 - text_surface.get_width() / 2,
                                    table_size[1] + text_surface.get_height() / 2))
-
-        get_moving_direction(direction)
-        if direction[0] != 0 or direction[1] != 0:
-            if len(snake) > 1:
-                snake_tail = snake.pop(-1)
-                snake_tail.x = snake[0].x + direction[0]
-                snake_tail.y = snake[0].y + direction[1]
-
-                snake.insert(0, snake_tail)
-            else:
-                snake[0].x += direction[0]
-                snake[0].y += direction[1]
-
-        verify_snake_out_of_table(snake[0])
-
-        for snake_box in snake:
-            pygame.draw.rect(screen, WHITE, snake_box)
-
         for obstacle_rect in obstacles_rect:
             pygame.draw.rect(screen, RED, obstacle_rect)
 
@@ -127,15 +119,16 @@ def play():
 
         pygame.draw.rect(screen, GREEN, food)
 
-        # verific daca se loveste de obstacole
-        if len(snake[0].collidelistall(obstacles_rect)) > 0:
-            game_over = True
-            game_over_screen(score)
+        get_moving_direction(direction)
 
-        # verific daca se musca pe el
-        danger_zone = snake.copy()
-        danger_zone.pop(0)
-        if len(snake[0].collidelistall(danger_zone)) > 0:
+        snake_advances(snake, direction)
+
+        verify_snake_out_of_table(snake[0])
+
+        for snake_box in snake:
+            pygame.draw.rect(screen, WHITE, snake_box)
+
+        if verify_snake_collision(snake):
             game_over = True
             game_over_screen(score)
 
@@ -148,9 +141,9 @@ def play():
             score += 5
             text_surface = font.render('Your Score: ' + str(score), False, WHITE)
             no_food = True
+
         pygame.display.flip()
         clock.tick(15)
-    return score
 
 
 def game_over_screen(score):
@@ -208,6 +201,22 @@ def quit_session_screen():
 
 
 def main():
+    global obstacles_rect, screen, table_size, font
+
+    with open(sys.argv[1]) as f_in:
+        data = json.load(f_in)
+
+    table_size = data["table_size"].copy()
+    obstacles = data["obstacles"].copy()
+
+    pygame.init()
+    pygame.display.set_caption('Snake Game')
+    font = pygame.font.SysFont('Comic Sans MS', 30)
+    screen = pygame.display.set_mode((table_size[0], table_size[1] + 100))
+
+    obstacles_rect = [pygame.Rect(obstacle[0], obstacle[1], obstacles_box_size, obstacles_box_size)
+                      for obstacle in obstacles]
+
     play()
 
 

@@ -15,6 +15,10 @@ obstacles_box_size = 10
 
 
 def verify_quit_game():
+    """
+    Checks if the X button has been pressed. If it has been pressed, close the game.
+    :return:
+    """
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -22,6 +26,13 @@ def verify_quit_game():
 
 
 def get_moving_direction(direction):
+    """
+    It changes the direction of the snake, depending on the input received from the keyboard.
+    :param direction: It is a list of two elements which represents the directions of the snake on the X axis and the Y
+                    axis.At the beginning of the function, it has the current direction of the snake,
+                    after the execution of the function it will have the updated direction of the snake.
+    :return:
+    """
     snake_step = 10
 
     keys_input = pygame.key.get_pressed()
@@ -44,6 +55,14 @@ def get_moving_direction(direction):
 
 
 def snake_advances(snake, direction):
+    """
+    It implements one step forward of the snake.
+    :param snake: It is a list of pygame.Rect() objects that represents the squares that make up the snake.
+                First of them is the head of the snake. This list is updated during the execution of the function.
+    :param direction: It is a list of two elements which represent the directions of the snake on the X axis and the Y
+                     axis.
+    :return:
+    """
     if direction[0] != 0 or direction[1] != 0:
         if len(snake) > 1:
             snake_tail = snake.pop(-1)
@@ -57,22 +76,31 @@ def snake_advances(snake, direction):
 
 
 def verify_snake_out_of_table(snake_head):
+    """
+    Checks if the snake head is out of the table. If so, it modifies the position of it so that it comes out the other
+    side of the table.
+    :param snake_head: It is the first element from the snake's list. It is a pygame.Rect() object. During the execution
+                        of the function, its position will be modified.
+    :return:
+    """
     if snake_head.x > table_size[0] - snake_box_size:
         snake_head.x = 0
-        return True
+
     if snake_head.x < 0:
         snake_head.x = table_size[0] - snake_box_size
-        return True
+
     if snake_head.y > table_size[1] - snake_box_size:
         snake_head.y = 0
-        return True
+
     if snake_head.y < 0:
         snake_head.y = table_size[1] - snake_box_size
-        return True
-    return False
 
 
 def get_food():
+    """
+    Generates a food rectangle on a random position.
+    :return food: The food rectangle generated when performing this function.
+    """
     food_size = 10
     food_coord = [0, 0]
     food_coord[0] = int(random.randint(0, table_size[0] - snake_box_size) / 10) * 10
@@ -82,6 +110,13 @@ def get_food():
 
 
 def verify_snake_collision(snake):
+    """
+    Checks if there is collision between the snake head and an obstacle, or between the snake's head and snake's body.
+    :param snake: It is a list of pygame.Rect() objects that represents the squares that make up the snake.
+                First of them is the head of the snake.
+    :return: True: if there is collision between the snake and his body or the obstacles;
+             False: if there is no collision between the snake and his body or the obstacles;
+    """
     if len(snake[0].collidelistall(obstacles_rect)) > 0:
         return True
 
@@ -92,6 +127,18 @@ def verify_snake_collision(snake):
 
 
 def play():
+    """
+    This function implements the workflow of the game: draw the table with the obstacles, display the score and calls
+    the functions for: food generating,
+                    get moving directions of the snake,
+                    advancing of the snake,
+                    checking if the snake is on table,
+                    checking if there is collision between the snake and himself or obstacles (if so, the game is over)
+                    checking if there is collision between the snake head and food (if so, the score and the snake
+                        length are updating)
+    while the game is not over. When the game is over, it calls the function game_over_screen().
+    :return:
+    """
     global game_over
     direction = [0, 0]
     snake = list()
@@ -147,6 +194,13 @@ def play():
 
 
 def game_over_screen(score):
+    """
+    Displays the score of the last game and buttons for play again and quit session. It memorises the high score of the
+    current session. If the play again button is pressed, the play() function is called. If the quit session button is
+    pressed, the quit_session_screen() function is called.
+    :param score: The score of the last game.
+    :return:
+    """
     global game_over, high_score
 
     screen.fill(FUNDAL)
@@ -191,6 +245,10 @@ def game_over_screen(score):
 
 
 def quit_session_screen():
+    """
+    Displays the high score of the current session and waits for the X button to be pressed.
+    :return:
+    """
     screen.fill(FUNDAL)
     text = font.render('High score: ' + str(high_score), False, WHITE)
 
@@ -201,6 +259,11 @@ def quit_session_screen():
 
 
 def main():
+    """
+    Reads the dimensions of the table and the positions of the obstacles from the table.json file and calls the play()
+    function to start a game.
+    :return:
+    """
     global obstacles_rect, screen, table_size, font
 
     with open(sys.argv[1]) as f_in:
